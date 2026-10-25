@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Umbra: remove shadows from outdoor photos</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232f6b73'/%3E%3Ccircle cx='13' cy='13' r='6' fill='%23f6f7f6'/%3E%3Cellipse cx='20' cy='21' rx='8' ry='4' fill='%23123' opacity='.55'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#f6f7f6;--tx:#1b2a28;--mu:#5a6866;--ln:#d9dfdd;--sf:#fff;--ac:#2f6b73;--on:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12201f;--tx:#e6ecea;--mu:#9db0ad;--ln:#2a3d3b;--sf:#182b29;--ac:#7fb8b0;--on:#10201f}}
+:root[data-theme="dark"]{--bg:#12201f;--tx:#e6ecea;--mu:#9db0ad;--ln:#2a3d3b;--sf:#182b29;--ac:#7fb8b0;--on:#10201f}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+.w{max-width:1040px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--ln)}header .w{display:flex;justify-content:space-between;align-items:center;height:60px}
+.br{font:700 20px Georgia,serif;letter-spacing:.02em}nav a{color:var(--mu);text-decoration:none;margin-left:22px;font-size:14px}nav a:hover{color:var(--tx)}
+h1{font:700 clamp(32px,6vw,52px)/1.1 Georgia,serif;margin:0 0 16px;max-width:15em}h2{font:700 26px Georgia,serif;margin:0 0 8px}
+.hero{padding:64px 0 40px}.hero p{max-width:38em;color:var(--mu);font-size:18px;margin:0 0 24px}
+.btn{display:inline-block;background:var(--ac);color:var(--on);border:0;border-radius:6px;padding:11px 18px;font:600 15px system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.btn.o{background:transparent;color:var(--tx);border:1px solid var(--ln)}.btn:disabled{opacity:.4;cursor:default}
+section{padding:36px 0}.card{background:var(--sf);border:1px solid var(--ln);border-radius:8px}
+#drop{display:block;border:2px dashed var(--ln);border-radius:8px;padding:48px 20px;text-align:center;color:var(--mu);cursor:pointer;background:var(--sf)}
+#drop.on,#drop:hover{border-color:var(--ac);color:var(--tx)}#drop b{color:var(--tx)}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;padding:16px;margin:16px 0}
+.ctl label{display:block;font-size:13px;color:var(--mu)}.ctl label span{float:right;color:var(--tx);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--ac)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.tabs button{background:transparent;border:1px solid var(--ln);color:var(--mu);border-radius:6px;padding:7px 14px;font:500 14px system-ui;cursor:pointer}
+.tabs button.a{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.stage{position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--ln);background:#000;line-height:0}
+.stage canvas{width:100%;height:auto;display:block}#cB{position:absolute;top:0;left:0}
+.tag{position:absolute;top:10px;background:rgba(0,0,0,.6);color:#fff;font:600 12px system-ui;padding:4px 8px;border-radius:4px;line-height:1.3}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:14px;color:var(--mu)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:18px}.steps div{padding:18px}
+.steps i{font:700 22px Georgia,serif;font-style:normal;color:var(--ac)}.steps h3{margin:6px 0;font-size:16px}.steps p{margin:0;color:var(--mu);font-size:14px}
+ul{color:var(--mu);padding-left:20px}li{margin:6px 0}footer{border-top:1px solid var(--ln);padding:24px 0;color:var(--mu);font-size:14px}
+#busy{display:none;color:var(--ac)}
+</style>
+</head>
+<body>
+<header><div class="w"><span class="br">Umbra</span><nav><a href="#tool">Tool</a><a href="#method">Method</a><a href="#limits">Limits</a></nav></div></header>
+<main>
+<div class="w hero">
+<h1>Remove shadows from outdoor photos</h1>
+<p>Upload a photo with a hard shadow on grass, road or pavement. Umbra finds the shadow in LAB color space, relights it to match the sunlit ground around it, and shows you the mask and the result. Processing runs in your browser, so the photo never leaves your device.</p>
+<a class="btn" href="#tool">Try it on a photo</a>
+</div>
+
+<section id="tool"><div class="w">
+<h2>Shadow remover</h2>
+<label id="drop" for="file"><b>Choose a photo</b> or drop one here<br><small>JPG, PNG or WebP. Large photos are scaled to 800 px on the long side.</small></label>
+<input id="file" type="file" accept="image/*" hidden>
+<div class="row"><span>No photo handy?</span><button class="btn o" id="demo" type="button">Generate a test image</button></div>
+
+<div id="work" style="display:none">
+<div class="card ctl">
+<div><label>Sensitivity (k) <span id="kv">3.0</span></label><input id="k" type="range" min="1.5" max="6" step="0.1" value="3"><small style="color:var(--mu)">Lower k marks more pixels as shadow.</small></div>
+<div><label>Minimum region size <span id="fv">15%</span></label><input id="f" type="range" min="0" max="60" step="1" value="15"><small style="color:var(--mu)">Drops regions smaller than this share of the largest one.</small></div>
+</div>
+<div class="tabs" id="tabs"><button data-v="compare" class="a">Compare</button><button data-v="result">Result</button><button data-v="mask">Shadow mask</button><button data-v="overlay">Overlay</button></div>
+<div class="stage"><canvas id="cA"></canvas><canvas id="cB"></canvas><span class="tag" id="t1" style="left:10px">Original</span><span class="tag" id="t2" style="right:10px">Shadow removed</span></div>
+<input id="cmp" type="range" min="0" max="100" value="50" style="margin-top:10px" aria-label="Comparison position">
+<div class="row"><span id="stat"></span><span id="busy">Processing</span><button class="btn" id="dl" type="button">Download result (PNG)</button></div>
+</div>
+</div></section>
+
+<section id="method"><div class="w">
+<h2>How it works</h2>
+<p style="color:var(--mu);margin:0">The same pipeline as the Python version of this project, running on a canvas.</p>
+<div class="steps">
+<div class="card"><i>01</i><h3>Convert to LAB</h3><p>A shadow lowers lightness (L) while chromaticity (a, b) stays close, which separates it from a dark object.</p></div>
+<div class="card"><i>02</i><h3>Threshold</h3><p>Pixels below mean minus std / k on L, or on L + a + b for strongly colored scenes, become shadow candidates. The sensitivity slider is k.</p></div>
+<div class="card"><i>03</i><h3>Clean the mask</h3><p>Morphological open and close, a YCbCr check, then only regions of meaningful size are kept, so grass blades and gravel are not read as shadow.</p></div>
+<div class="card"><i>04</i><h3>Relight</h3><p>Each LAB channel of the shadow is rescaled to the mean and spread of a ring of lit pixels around it, then the seam is blurred.</p></div>
+</div></div></section>
+
+<section id="limits"><div class="w">
+<h2>Where it struggles</h2>
+<ul>
+<li>It assumes one dominant shadow on a fairly uniform surface. Many small shadows, or shadows across several materials, are corrected only partly.</li>
+<li>Very dark or very soft shadows can leave a faint outline, because relighting matches statistics and does not recover the true pixels.</li>
+<li>Dark objects that are not shadows, such as a black car, can be marked as shadow. Raise the minimum region size or lower sensitivity if that happens.</li>
+<li>This browser version blurs the seam. The Python version of the project uses Telea inpainting for that step.</li>
+</ul></div></section>
+</main>
+<footer><div class="w">Umbra is a coursework project for Image Processing. Photos are processed locally and are not uploaded.</div></footer>
+
+<script>
+const $=s=>document.querySelector(s);let src=null,out=null,view='compare',tm;
+const LIN=new Float32Array(256);for(let i=0;i<256;i++){const c=i/255;LIN[i]=c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4)}
+const fw=t=>t>.008856?Math.cbrt(t):7.787*t+16/116,fi=t=>{const c=t*t*t;return c>.008856?c:(t-16/116)/7.787},gm=c=>{c=c<=.0031308?12.92*c:1.055*Math.pow(c,1/2.4)-.055;return c<0?0:c>1?255:c*255};
+function mm(m,w,h,r,mx){const t=new Uint8Array(m.length),o=new Uint8Array(m.length);
+for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=mx?0:1;for(let k=-r;k<=r;k++){const xx=x+k;if(xx<0||xx>=w)continue;const q=m[y*w+xx];if(mx?q:!q){v=mx?1:0;break}}t[y*w+x]=v}
+for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=mx?0:1;for(let k=-r;k<=r;k++){const yy=y+k;if(yy<0||yy>=h)continue;const q=t[yy*w+x];if(mx?q:!q){v=mx?1:0;break}}o[y*w+x]=v}
+return o}
+function keep(m,w,h,frac,minAbs){const n=w*h,lab=new Int32Array(n),st=new Int32Array(n),ar=[0];let c=0;
+for(let i=0;i<n;i++){if(!m[i]||lab[i])continue;c++;let sp=0,a=0;st[sp++]=i;lab[i]=c;
+while(sp){const p=st[--sp];a++;const px=p%w,py=(p/w)|0;for(let dy=-1;dy<=1;dy++){const yy=py+dy;if(yy<0||yy>=h)continue;for(let dx=-1;dx<=1;dx++){const xx=px+dx;if(xx<0||xx>=w)continue;const q=yy*w+xx;if(m[q]&&!lab[q]){lab[q]=c;st[sp++]=q}}}}ar.push(a)}
+let mx=0;for(const a of ar)if(a>mx)mx=a;const lim=Math.max(minAbs,frac*mx),ok=ar.map(a=>a>=lim),o=new Uint8Array(n);let regions=0;
+for(let i=1;i<ar.length;i++)if(ok[i])regions++;for(let i=0;i<n;i++)if(lab[i]&&ok[lab[i]])o[i]=1;return{m:o,regions}}
+function blur(d,w,h,r){const o=new Float32Array(d.length);const s=2*r+1;
+for(let ch=0;ch<3;ch++){const t=new Float32Array(w*h);
+for(let y=0;y<h;y++)for(let x=0;x<w;x++){let a=0,c=0;for(let k=-r;k<=r;k++){const xx=x+k;if(xx<0||xx>=w)continue;a+=d[(y*w+xx)*4+ch];c++}t[y*w+x]=a/c}
+for(let y=0;y<h;y++)for(let x=0;x<w;x++){let a=0,c=0;for(let k=-r;k<=r;k++){const yy=y+k;if(yy<0||yy>=h)continue;a+=t[yy*w+x];c++}o[(y*w+x)*4+ch]=a/c}}return o}
+function run(){if(!src)return;$('#busy').style.display='inline';setTimeout(go,10)}
+function go(){const t0=performance.now(),{w,h}=src,d=src.img.data,n=w*h,K=+$('#k').value,F=+$('#f').value/100;
+const L=new Float32Array(n),A=new Float32Array(n),B=new Float32Array(n);let sL=0,sA=0,sB=0;
+for(let i=0;i<n;i++){const r=LIN[d[i*4]],g=LIN[d[i*4+1]],b=LIN[d[i*4+2]];
+const fx=fw((.4124*r+.3576*g+.1805*b)/.95047),fy=fw(.2126*r+.7152*g+.0722*b),fz=fw((.0193*r+.1192*g+.9505*b)/1.08883);
+L[i]=(116*fy-16)*2.55;A[i]=500*(fx-fy)+128;B[i]=200*(fy-fz)+128;sL+=L[i];sA+=A[i];sB+=B[i]}
+const col=(sA/n-128)+(sB/n-128),V=i=>col<=15?L[i]:L[i]+A[i]+B[i];let mu=0,sd=0;for(let i=0;i<n;i++)mu+=V(i);mu/=n;for(let i=0;i<n;i++){const e=V(i)-mu;sd+=e*e}sd=Math.sqrt(sd/n);
+const thr=mu-sd/K;let m=new Uint8Array(n);for(let i=0;i<n;i++)m[i]=V(i)<thr?1:0;
+m=mm(mm(m,w,h,6,0),w,h,6,1);m=mm(mm(m,w,h,6,1),w,h,6,0);
+const kp=keep(m,w,h,F,Math.max(150,.0015*n));m=kp.m;
+let cb=0,cr=0,lc=0;const CB=new Float32Array(n),CR=new Float32Array(n);
+for(let i=0;i<n;i++){const r=d[i*4],g=d[i*4+1],b=d[i*4+2];CR[i]=128+.5*r-.4187*g-.0813*b;CB[i]=128-.1687*r-.3313*g+.5*b;if(!m[i]){cb+=CB[i];cr+=CR[i];lc++}}
+if(lc){cb/=lc;cr/=lc;const m2=new Uint8Array(n);let c2=0;for(let i=0;i<n;i++)if(m[i]&&CB[i]>=cb-5&&CR[i]<=cr+5){m2[i]=1;c2++}if(c2)m=m2}
+let cnt=0;for(let i=0;i<n;i++)cnt+=m[i];
+const res=new Uint8ClampedArray(d),mk=new Uint8ClampedArray(n*4),ov=new Uint8ClampedArray(d);
+for(let i=0;i<n;i++){const v=m[i]?255:0;mk[i*4]=mk[i*4+1]=mk[i*4+2]=v;mk[i*4+3]=255;if(m[i]){ov[i*4]=ov[i*4]*.6+102;ov[i*4+1]*=.6;ov[i*4+2]*=.6}}
+if(cnt){const dl=mm(m,w,h,7,1);const ring=new Uint8Array(n);let rc=0;for(let i=0;i<n;i++)if(dl[i]&&!m[i]){ring[i]=1;rc++}
+const refOk=rc>=50,C=[L,A,B],mean=[],std=[];
+for(let c=0;c<3;c++){let a=0,s=0,na=0,b=0,q=0,nb=0;const X=C[c];for(let i=0;i<n;i++){if(m[i]){a+=X[i];na++}else if(refOk?ring[i]:1){b+=X[i];nb++}}a/=na;b/=nb;
+for(let i=0;i<n;i++){if(m[i])s+=(X[i]-a)**2;else if(refOk?ring[i]:1)q+=(X[i]-b)**2}
+const ss=Math.sqrt(s/na)+1e-6,sl=Math.sqrt(q/nb)+1e-6;mean.push([a,b,Math.min(3,Math.max(.5,sl/ss))])}
+for(let i=0;i<n;i++)if(m[i]){const v=[0,1,2].map(c=>{const[a,b,sc]=mean[c];return(C[c][i]-a)*sc+b});
+const Lr=Math.min(255,Math.max(0,v[0]))/2.55,a=Math.min(255,Math.max(0,v[1]))-128,bb=Math.min(255,Math.max(0,v[2]))-128;
+const fy=(Lr+16)/116,fx=fy+a/500,fz=fy-bb/200,X=fi(fx)*.95047,Y=fi(fy),Z=fi(fz)*1.08883;
+res[i*4]=gm(3.2406*X-1.5372*Y-.4986*Z);res[i*4+1]=gm(-.9689*X+1.8758*Y+.0415*Z);res[i*4+2]=gm(.0557*X-.204*Y+1.057*Z)}
+const bl=blur(res,w,h,3),big=mm(m,w,h,4,1),sm=mm(m,w,h,4,0);
+for(let i=0;i<n;i++)if(big[i]&&!sm[i]){res[i*4]=bl[i*4];res[i*4+1]=bl[i*4+1];res[i*4+2]=bl[i*4+2]}}
+const cv=(a)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').putImageData(new ImageData(a,w,h),0,0);return c};
+out={o:cv(new Uint8ClampedArray(d)),r:cv(res),m:cv(mk),v:cv(ov),w,h};
+$('#stat').textContent=cnt?`Shadow coverage ${(100*cnt/n).toFixed(1)}%, ${kp.regions} region${kp.regions==1?'':'s'} kept, ${Math.round(performance.now()-t0)} ms`:'No shadow found at this sensitivity. Try a lower k.';
+$('#busy').style.display='none';show()}
+function put(id,c){const e=$(id);e.width=c.width;e.height=c.height;e.getContext('2d').drawImage(c,0,0)}
+function show(){if(!out)return;const cmp=view=='compare',b=$('#cB');
+put('#cA',cmp?out.o:{compare:0,result:out.r,mask:out.m,overlay:out.v}[view]);
+if(cmp)put('#cB',out.r);b.style.display=cmp?'block':'none';$('#cmp').style.display=cmp?'block':'none';$('#t1').style.display=$('#t2').style.display=cmp?'block':'none';clip()}
+function clip(){$('#cB').style.clipPath=`inset(0 0 0 ${$('#cmp').value}%)`}
+function useImg(i){const M=800,iw=i.naturalWidth||i.width,ih=i.naturalHeight||i.height,s=Math.min(1,M/Math.max(iw,ih)),w=Math.round(iw*s),h=Math.round(ih*s),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(i,0,0,w,h);
+src={w,h,img:x.getImageData(0,0,w,h)};$('#work').style.display='block';run()}
+function file(f){if(!f||!f.type.startsWith('image/'))return;const i=new Image();i.onload=()=>{useImg(i);URL.revokeObjectURL(i.src)};i.src=URL.createObjectURL(f)}
+$('#file').onchange=e=>file(e.target.files[0]);
+const dz=$('#drop');dz.ondragover=e=>{e.preventDefault();dz.classList.add('on')};dz.ondragleave=()=>dz.classList.remove('on');dz.ondrop=e=>{e.preventDefault();dz.classList.remove('on');file(e.dataTransfer.files[0])};
+$('#demo').onclick=()=>{const w=640,h=420,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d'),im=x.createImageData(w,h);
+for(let y=0;y<h;y++)for(let i=0;i<w;i++){const nz=(Math.random()-.5)*34,dx=(i-330)/150,dy=(y-210)/80,e=Math.sqrt(dx*dx+dy*dy),s=e<1?.45:e<1.15?.45+(e-1)/.15*.55:1,p=(y*w+i)*4;
+im.data[p]=(150+nz)*s;im.data[p+1]=(138+nz)*s;im.data[p+2]=(112+nz)*s+(1-s)*18;im.data[p+3]=255}x.putImageData(im,0,0);useImg(c)};
+$('#tabs').onclick=e=>{const v=e.target.dataset.v;if(!v)return;view=v;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('a',b==e.target));show()};
+$('#cmp').oninput=clip;
+const deb=()=>{$('#kv').textContent=(+$('#k').value).toFixed(1);$('#fv').textContent=$('#f').value+'%';clearTimeout(tm);tm=setTimeout(run,150)};$('#k').oninput=$('#f').oninput=deb;
+$('#dl').onclick=()=>{if(!out)return;out.r.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='umbra-result.png';a.click()})};
+</script>
+</body>
+</html>

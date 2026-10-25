@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+outputs/
+evaluation_results.csv
+ISTD_Dataset/
+.venv/
+.vscode/
